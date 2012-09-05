@@ -1,46 +1,44 @@
 #include <stdlib.h>
+#include <string.h>
+
 #include <mat.h>
 #include <matrix.h>
 
+#include "commons.h"
 #include "dataloader.h"
 
 using namespace std;
 
-MATFile* open_data_file(const char* name) {
-    return matOpen(name, "r");
-}
+data_item load_from_file(string filename, string variable) {
+    MATFile *datafile = matOpen(filename.c_str(), "r");
 
-void get_dimensions(MATFile *datafile, const char* variable_name, int *dimens) {
-    mxArray *mxv;
-    mxv = matGetVariable(datafile, variable_name);
+    double **data;
     
-    dimens[0] = (int)mxGetM(mxv);
-    dimens[1] = (int)mxGetN(mxv);
+    mxArray *mxv, *mxt;
+    mxv = matGetVariable(datafile, (variable + "_signal").c_str());
+    mxt = matGetVariable(datafile, (variable + "_t").c_str());
+
+    data_item dataitem = *(new data_item);
+    dataitem.M = (int)mxGetM(mxv);
+    dataitem.N = (int)mxGetN(mxv);
+    dataitem.Nt = MAX((int)mxGetM(mxt), (int)mxGetN(mxt));
     
-    mxDestroyArray(mxv);
-}
-
-void load_data(MATFile *datafile, const char* name, double **data, int *dimens) {
-    mxArray *mxv;
-    mxv = matGetVariable(datafile, name);
-
-    const int M = dimens[0];
-    const int N = dimens[1];
+    dataitem.data = new double*[dataitem.N];
+    dataitem.times = new double[dataitem.Nt];
     
-    printf("%s loaded with dimensions %d-by-%d\n", name, (int)M, N);
-
-    printf("\tMemory allocated for %s...\n", name);
-
-    for (int n = 0; n < N; n++) {
-        for (int m = 0; m < M; m++) {
-            data[n][m] = *mxGetPr(mxv);
+    for (int n = 0; n < dataitem.N; n++) {
+        dataitem.data[n] = new double[dataitem.M];
+        for (int m = 0; m < dataitem.M; m++) {
+            dataitem.data[n][m] = *mxGetPr(mxv);
         }
-    }
+    }    
 
-    printf("\t%s saved to C++ variable\n", name);
+    dataitem.times = mxGetPr(mxv);
     
     mxDestroyArray(mxv);
+    mxDestroyArray(mxt);
     
-    printf("\tExiting load_data...\n");
-    fflush(stdout);
+    matClose(datafile);
+    
+    return dataitem;
 }

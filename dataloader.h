@@ -1,9 +1,12 @@
-#define GLOBAL_VECTOR_LENGTH 8192
-#define INPUT_VECTOR_LENGTH 2000
-#define INPUT_CHANNEL_COUNT 64
+#include <string>
 
-void load_data(MATFile*, const char*, double**, int*);
-void get_dimensions(MATFile*, const char*, int*);
+struct data_item {
+    double** data;
+    double* times;
+    int M;
+    int N;
+    int Nt;
+};
 
-MATFile* open_data_file(const char*);
 
+data_item load_from_file(std::string, std::string);
